@@ -1,3 +1,4 @@
+import { useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { subjects, categoryLabels, categoryColors } from "../lib/subjects";
 import { cn } from "../lib/utils";
 
@@ -6,7 +7,31 @@ interface ScoreFormProps {
   updateScore: (id: string, value: string) => void;
 }
 
-export function ScoreForm({ getScore, updateScore }: ScoreFormProps) {
+export interface ScoreFormRef {
+  focusNextEmpty: () => void;
+}
+
+export const ScoreForm = forwardRef<ScoreFormRef, ScoreFormProps>(({ getScore, updateScore }, ref) => {
+  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const focusNextEmpty = useCallback(() => {
+    const nextEmpty = subjects.find((subject) => {
+      const val = getScore(subject.id);
+      return val === "" || val === undefined;
+    });
+
+    if (nextEmpty) {
+      const input = inputRefs.current[nextEmpty.id];
+      if (input) {
+        input.focus();
+        input.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [getScore]);
+
+  useImperativeHandle(ref, () => ({
+    focusNextEmpty,
+  }), [focusNextEmpty]);
   const grouped = subjects.reduce(
     (acc, subject) => {
       if (!acc[subject.category]) acc[subject.category] = [];
@@ -70,6 +95,7 @@ export function ScoreForm({ getScore, updateScore }: ScoreFormProps) {
                   </div>
                   <div className="relative">
                     <input
+                      ref={(el) => { inputRefs.current[subject.id] = el; }}
                       type="number"
                       min="0"
                       max="100"
@@ -96,4 +122,4 @@ export function ScoreForm({ getScore, updateScore }: ScoreFormProps) {
       ))}
     </div>
   );
-}
+});

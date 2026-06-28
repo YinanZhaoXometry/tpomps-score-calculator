@@ -1,15 +1,17 @@
-import { useState, useCallback } from "react";
-import { Calculator, RotateCcw, GraduationCap } from "lucide-react";
-import { ScoreForm } from "./components/ScoreForm";
-import { ResultPanel } from "./components/ResultPanel";
-import { CelebrationEffect } from "./components/CelebrationEffect";
-import { useFormCache } from "./hooks/useFormCache";
-import { cn } from "./lib/utils";
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { Calculator, RotateCcw, GraduationCap, ArrowRight } from 'lucide-react';
+import { ScoreForm, type ScoreFormRef } from './components/ScoreForm';
+import { ResultPanel } from './components/ResultPanel';
+import { CelebrationEffect } from './components/CelebrationEffect';
+import { useFormCache } from './hooks/useFormCache';
+import { subjects } from './lib/subjects';
+import { cn } from './lib/utils';
 
 function App() {
   const { getScore, updateScore, getNumericScore, clearAll } = useFormCache();
   const [showResult, setShowResult] = useState(false);
   const [celebrating, setCelebrating] = useState(false);
+  const scoreFormRef = useRef<ScoreFormRef>(null);
 
   const handleCalculate = useCallback(() => {
     setShowResult(true);
@@ -25,9 +27,25 @@ function App() {
     setCelebrating(false);
   }, []);
 
+  const handleFillNext = useCallback(() => {
+    scoreFormRef.current?.focusNextEmpty();
+  }, []);
+
+  const isAllFilled = useMemo(() => {
+    return subjects.every((subject) => {
+      const val = getScore(subject.id);
+      if (val === '' || val === undefined) return false;
+      const num = parseFloat(val);
+      return !isNaN(num) && num >= 0 && num <= 100;
+    });
+  }, [getScore]);
+
   return (
     <div className="min-h-screen bg-background">
-      <CelebrationEffect fire={celebrating} onComplete={handleCelebrationComplete} />
+      <CelebrationEffect
+        fire={celebrating}
+        onComplete={handleCelebrationComplete}
+      />
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
@@ -56,7 +74,7 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 pb-32">
         {/* Intro */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-foreground mb-2">
@@ -68,24 +86,11 @@ function App() {
         </div>
 
         {/* Score Form */}
-        <ScoreForm getScore={getScore} updateScore={updateScore} />
-
-        {/* Calculate Button */}
-        <div className="mt-8 flex justify-center">
-          <button
-            onClick={handleCalculate}
-            className={cn(
-              "flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-medium",
-              "bg-foreground text-background",
-              "hover:opacity-90 active:scale-[0.98]",
-              "transition-all duration-150",
-              "shadow-lg shadow-foreground/10"
-            )}
-          >
-            <Calculator className="w-4 h-4" />
-            計算成績
-          </button>
-        </div>
+        <ScoreForm
+          ref={scoreFormRef}
+          getScore={getScore}
+          updateScore={updateScore}
+        />
 
         {/* Results */}
         {showResult && (
@@ -95,8 +100,44 @@ function App() {
         )}
       </main>
 
+      {/* Fixed Bottom Button */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/40 backdrop-blur-xl">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex gap-3">
+          <button
+            onClick={handleFillNext}
+            disabled={isAllFilled}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-md font-bold',
+              'transition-all duration-150',
+              'shadow-lg shadow-foreground/10',
+              isAllFilled
+                ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                : 'bg-foreground text-background hover:opacity-90 active:scale-[0.98] hover:cursor-pointer',
+            )}
+          >
+            <ArrowRight className="w-4 h-4" />
+            填寫下一項
+          </button>
+          <button
+            onClick={handleCalculate}
+            disabled={!isAllFilled}
+            className={cn(
+              'flex-1 justify-center flex items-center gap-2 px-8 py-3 rounded-xl text-md font-bold',
+              'transition-all duration-150',
+              'shadow-lg shadow-foreground/10',
+              isAllFilled
+                ? 'bg-foreground text-background hover:opacity-90 active:scale-[0.98] hover:cursor-pointer'
+                : 'bg-muted text-muted-foreground cursor-not-allowed',
+            )}
+          >
+            <Calculator className="w-4 h-4" />
+            {isAllFilled ? '計算成績' : '填寫完整後計算'}
+          </button>
+        </div>
+      </div>
+
       {/* Footer */}
-      <footer className="border-t border-border mt-16">
+      <footer className="border-t border-border mt-16 pb-24">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between">
           <p className="text-xs text-muted-foreground">
             TPOMPS Score Calculator
