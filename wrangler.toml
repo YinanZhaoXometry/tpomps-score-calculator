@@ -1,0 +1,24 @@
+# Cloudflare Pages 設定 — GitHub Actions 的 `wrangler pages deploy` 會讀取此檔，
+# 連同 functions/ 目錄一起部署，並套用下方的 D1 綁定與環境變數。
+#
+# 首次設定：
+#   1. `npx wrangler d1 create tpomps-history`，把回傳的 database_id 填到下方
+#   2. `pnpm db:migrate:remote` 建立資料表
+#   3. 在下方 [vars] 填入 FIREBASE_PROJECT_ID 與 AI 設定
+#      （AI_API_KEY 是密鑰，由 CI 從 GitHub secret 同步，不要寫在這裡）
+
+name = "tpomps-score-calculator"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-10-17"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tpomps-history"
+database_id = "TODO_FILL_FROM_wrangler_d1_create"
+
+[vars]
+# Firebase 專案 ID（與 VITE_FIREBASE_PROJECT_ID 相同），後端用來驗證 ID token
+FIREBASE_PROJECT_ID = "TODO_YOUR_FIREBASE_PROJECT_ID"
+# OpenAI 相容 API（POST {AI_BASE_URL}/chat/completions）的設定，用於成績表照片辨識
+AI_BASE_URL = "https://api.openai.com/v1"
+AI_MODEL = "gpt-4o-mini"

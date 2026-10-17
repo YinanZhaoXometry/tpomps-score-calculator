@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "module": "esnext",
+    "types": ["@cloudflare/workers-types"],
+    "skipLibCheck": true,
+
+    /* Bundler mode (wrangler bundles functions/ with esbuild) */
+    "moduleResolution": "bundler",
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting — mirror tsconfig.app.json */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "strict": true
+  },
+  "include": ["functions", "src/lib/subject-data.ts"]
+}

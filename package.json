@@ -3,24 +3,30 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@10.9.0",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev:full": "vite build && wrangler pages dev",
+    "build": "tsc -b && tsc -p tsconfig.functions.json && vite build",
     "lint": "oxlint",
-    "preview": "pnpm run build && wrangler dev",
-    "deploy": "pnpm run build && wrangler deploy"
+    "preview": "vite preview",
+    "deploy": "pnpm run build && wrangler pages deploy",
+    "db:migrate:local": "wrangler d1 execute tpomps-history --local --file=migrations/0001_init.sql",
+    "db:migrate:remote": "wrangler d1 execute tpomps-history --remote --file=migrations/0001_init.sql"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.1",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
+    "firebase": "^13.0.0",
+    "jose": "^6.2.12",
     "lucide-react": "^1.21.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "tailwindcss": "^4.3.1"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.42.3",
+    "@cloudflare/workers-types": "^5.20261016.1",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
@@ -31,6 +37,12 @@
     "tailwind-merge": "^3.6.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.0",
-    "wrangler": "^4.105.0"
+    "wrangler": "^4.151.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "workerd"
+    ]
   }
 }

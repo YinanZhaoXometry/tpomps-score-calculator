@@ -1,21 +1,20 @@
 import { subjects, TOTAL_MAX } from "../lib/subjects";
 import { cn, getGrade, formatScore } from "../lib/utils";
-import { TrendingUp, Award, BarChart3 } from "lucide-react";
+import { TrendingUp, BarChart3, Save } from "lucide-react";
+import { ScoreDetailTable } from "./ScoreDetailTable";
+import type { SubjectResult } from "./ScoreDetailTable";
 
 interface ResultPanelProps {
   getNumericScore: (id: string) => number | null;
+  onSaveHistory?: () => void;
+  savingHistory?: boolean;
 }
 
-interface SubjectResult {
-  id: string;
-  name: string;
-  raw: number;
-  weight: number;
-  weighted: number;
-  maxWeighted: number;
-}
-
-export function ResultPanel({ getNumericScore }: ResultPanelProps) {
+export function ResultPanel({
+  getNumericScore,
+  onSaveHistory,
+  savingHistory,
+}: ResultPanelProps) {
   const results: SubjectResult[] = subjects
     .map((s) => {
       const raw = getNumericScore(s.id);
@@ -60,6 +59,23 @@ export function ResultPanel({ getNumericScore }: ResultPanelProps) {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {onSaveHistory && (
+        <div className="flex justify-end">
+          <button
+            onClick={onSaveHistory}
+            disabled={savingHistory}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card text-sm font-medium text-foreground",
+              "shadow-sm transition-all hover:bg-muted active:scale-[0.98] hover:cursor-pointer",
+              savingHistory && "opacity-60 cursor-not-allowed"
+            )}
+          >
+            <Save className="w-4 h-4" />
+            {savingHistory ? "儲存中…" : "儲存記錄"}
+          </button>
+        </div>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Average Score Card */}
@@ -173,61 +189,7 @@ export function ResultPanel({ getNumericScore }: ResultPanelProps) {
       </div>
 
       {/* Detail Table */}
-      {filledCount >= 2 && (
-        <div className="bg-card rounded-2xl border border-border overflow-hidden">
-          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
-            <Award className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium">各科明細</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/50">
-                  <th className="text-left px-6 py-3 font-medium text-muted-foreground">
-                    科目
-                  </th>
-                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">
-                    原始分
-                  </th>
-                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">
-                    權重
-                  </th>
-                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">
-                    加權分
-                  </th>
-                  <th className="text-right px-6 py-3 font-medium text-muted-foreground">
-                    滿分
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors"
-                  >
-                    <td className="px-6 py-3 font-medium text-foreground">
-                      {r.name}
-                    </td>
-                    <td className="text-right px-4 py-3 font-mono text-foreground">
-                      {r.raw}
-                    </td>
-                    <td className="text-right px-4 py-3 font-mono text-muted-foreground">
-                      x{r.weight}
-                    </td>
-                    <td className="text-right px-4 py-3 font-mono font-medium text-foreground">
-                      {r.weighted}
-                    </td>
-                    <td className="text-right px-6 py-3 font-mono text-muted-foreground">
-                      {r.maxWeighted}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {filledCount >= 2 && <ScoreDetailTable results={results} />}
     </div>
   );
 }
