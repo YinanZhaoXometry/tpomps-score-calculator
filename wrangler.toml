@@ -26,7 +26,7 @@ database_id = "b33a6d9a-4f65-497e-bdf0-15bcd24c2c50"
 [vars]
 # Google OAuth client ID（公開值）。建立方式見 README「Google 登入」一節；
 # 對應的 client secret 以 GOOGLE_CLIENT_SECRET 名義設為 Worker secret。
-GOOGLE_CLIENT_ID = "TODO_YOUR_GOOGLE_CLIENT_ID"
+GOOGLE_CLIENT_ID = "1002663246696-8q0rf526d1ms800v01k7q2hcdlrqg3d0.apps.googleusercontent.com"
 # OpenAI 相容 API（POST {AI_BASE_URL}/chat/completions）的設定，用於成績表照片辨識
 AI_BASE_URL = "https://api.openai.com/v1"
 AI_MODEL = "gpt-4o-mini"
