@@ -31,23 +31,24 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
 
-      # wrangler.toml（含 D1 綁定與 [vars]）與 functions/ 目錄決定部署內容與設定；
-      # 使用 repo 內鎖定版本的 wrangler（wrangler-action 預設裝的舊版不支援
-      # Pages 的 wrangler.toml 設定）。CLOUDFLARE_API_TOKEN 需要
-      # Cloudflare Pages 編輯 + D1 編輯權限。
-      - name: Deploy to Cloudflare Pages
-        run: pnpm exec wrangler pages deploy
+      # wrangler.toml（Worker + 靜態資產 + D1 綁定 + [vars]）決定部署內容與設定；
+      # 使用 repo 內鎖定版本的 wrangler。CLOUDFLARE_API_TOKEN 需要
+      # Cloudflare Workers Scripts 編輯 + D1 編輯權限。
+      # 注意：若 Cloudflare dashboard 的 Workers Builds 也連結了此 repo，會重複部署，
+      # 建議擇一（停用此 job，或 Settings → Builds → Disconnect）。
+      - name: Deploy to Cloudflare Workers
+        run: pnpm exec wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      # 把 AI API 密鑰同步為 Pages secret（未設定 AI_API_KEY secret 時自動略過）。
+      # 把 AI API 密鑰同步為 Worker secret（未設定 AI_API_KEY secret 時自動略過）。
       # 也可以只在本機手動執行一次：
-      #   pnpm exec wrangler pages secret put AI_API_KEY --project-name tpomps-score-calculator
-      - name: Sync AI_API_KEY Pages secret
+      #   pnpm exec wrangler secret put AI_API_KEY
+      - name: Sync AI_API_KEY secret
         run: |
           if [ -n "$AI_API_KEY" ]; then
-            printf '%s' "$AI_API_KEY" | pnpm exec wrangler pages secret put AI_API_KEY --project-name tpomps-score-calculator
+            printf '%s' "$AI_API_KEY" | pnpm exec wrangler secret put AI_API_KEY
           else
             echo "AI_API_KEY secret 未設定，略過同步"
           fi

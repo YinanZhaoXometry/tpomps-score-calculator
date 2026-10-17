@@ -1,7 +1,13 @@
-import { verifyUid } from '../../_lib/auth';
-import type { Env } from '../../_lib/env';
-import { errorJson, json } from '../../_lib/http';
-import { computeAverage, parseScores } from '../../_lib/scores';
+import { verifyUid } from '../_lib/auth';
+import type { Env } from '../_lib/env';
+import { errorJson, json } from '../_lib/http';
+import { computeAverage, parseScores } from '../_lib/scores';
+
+interface RouteContext {
+  request: Request;
+  env: Env;
+  params: Record<string, string>;
+}
 
 interface HistoryRow {
   id: string;
@@ -27,7 +33,10 @@ function toDto(row: HistoryRow): HistoryEntryDto {
   return { id: row.id, createdAt: row.created_at, scores, average: row.average };
 }
 
-export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
+export async function listHistory({
+  request,
+  env,
+}: RouteContext): Promise<Response> {
   const uid = await verifyUid(request, env);
   if (!uid) return errorJson(401, '尚未登入，請重新登入後再試');
 
@@ -38,9 +47,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     .all<HistoryRow>();
 
   return json({ entries: (results ?? []).map(toDto) });
-};
+}
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export async function createHistory({
+  request,
+  env,
+}: RouteContext): Promise<Response> {
   const uid = await verifyUid(request, env);
   if (!uid) return errorJson(401, '尚未登入，請重新登入後再試');
 
@@ -67,4 +79,29 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     .run();
 
   return json({ entry: { id, createdAt, scores, average } }, 201);
-};
+}
+
+export async function deleteHistory({
+  request,
+  env,
+  params,
+}: RouteContext): Promise<Response> {
+  const uid = await verifyUid(request, env);
+  if (!uid) return errorJson(401, '尚未登入，請重新登入後再試');
+
+  const id = params.id;
+  if (typeof id !== 'string' || id.length === 0) {
+    return errorJson(400, '無效的記錄 ID');
+  }
+
+  const result = await env.DB.prepare(
+    'DELETE FROM history_entries WHERE id = ? AND user_id = ?',
+  )
+    .bind(id, uid)
+    .run();
+
+  if ((result.meta.changes ?? 0) === 0) {
+    return errorJson(404, '找不到此記錄，可能已被刪除');
+  }
+  return json({ ok: true });
+}

@@ -4,6 +4,12 @@ import { errorJson, json } from '../_lib/http';
 import { parseScores } from '../_lib/scores';
 import { subjectData } from '../../src/lib/subject-data';
 
+interface RouteContext {
+  request: Request;
+  env: Env;
+  params: Record<string, string>;
+}
+
 // dataURL 字元數上限（約 6MB 的 base64 圖片）
 const MAX_IMAGE_CHARS = 8_000_000;
 
@@ -35,7 +41,10 @@ function extractJson(content: unknown): unknown {
   }
 }
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export async function recognizeScores({
+  request,
+  env,
+}: RouteContext): Promise<Response> {
   const uid = await verifyUid(request, env);
   if (!uid) return errorJson(401, '尚未登入，請重新登入後再試');
   if (!env.AI_BASE_URL || !env.AI_MODEL || !env.AI_API_KEY) {
@@ -106,4 +115,4 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return errorJson(422, '無法從圖片辨識成績，請使用更清晰的照片');
   }
   return json({ scores });
-};
+}

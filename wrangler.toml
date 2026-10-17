@@ -1,15 +1,22 @@
-# Cloudflare Pages 設定 — GitHub Actions 的 `wrangler pages deploy` 會讀取此檔，
-# 連同 functions/ 目錄一起部署，並套用下方的 D1 綁定與環境變數。
+# Cloudflare Worker（含靜態資產）設定 — `wrangler deploy` 會部署：
+#   - dist/ 的靜態資產（SPA，未命中路徑 fallback 到 index.html）
+#   - worker/ 的 API（/api/* 會先進 Worker，見 assets.run_worker_first）
 #
 # 首次設定：
 #   1. `npx wrangler d1 create tpomps-history`，把回傳的 database_id 填到下方
 #   2. `pnpm db:migrate:remote` 建立資料表
 #   3. 在下方 [vars] 填入 FIREBASE_PROJECT_ID 與 AI 設定
-#      （AI_API_KEY 是密鑰，由 CI 從 GitHub secret 同步，不要寫在這裡）
+#      （AI_API_KEY 為密鑰，用 `wrangler secret put` 設定，不要寫在這裡）
 
 name = "tpomps-score-calculator"
-pages_build_output_dir = "dist"
+main = "worker/index.ts"
 compatibility_date = "2026-10-17"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
 
 [[d1_databases]]
 binding = "DB"

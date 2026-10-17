@@ -6,7 +6,7 @@
     "types": ["@cloudflare/workers-types"],
     "skipLibCheck": true,
 
-    /* Bundler mode (wrangler bundles functions/ with esbuild) */
+    /* Bundler mode (wrangler bundles worker/ with esbuild) */
     "moduleResolution": "bundler",
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
@@ -19,5 +19,5 @@
     "noFallthroughCasesInSwitch": true,
     "strict": true
   },
-  "include": ["functions", "src/lib/subject-data.ts"]
+  "include": ["worker", "src/lib/subject-data.ts"]
 }
