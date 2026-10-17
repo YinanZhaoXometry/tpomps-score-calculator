@@ -5,8 +5,8 @@
 # 首次設定：
 #   1. `npx wrangler d1 create tpomps-history`，把回傳的 database_id 填到下方
 #   2. `pnpm db:migrate:remote` 建立資料表
-#   3. 在下方 [vars] 填入 FIREBASE_PROJECT_ID 與 AI 設定
-#      （AI_API_KEY 為密鑰，用 `wrangler secret put` 設定，不要寫在這裡）
+#   3. 在下方 [vars] 填入 GOOGLE_CLIENT_ID 與 AI 設定（GOOGLE_CLIENT_SECRET 與
+#      AI_API_KEY 是密鑰，用 `wrangler secret put` 設定，不要寫在這裡）
 
 name = "tpomps-score-calculator"
 main = "worker/index.ts"
@@ -24,8 +24,9 @@ database_name = "tpomps-history"
 database_id = "b33a6d9a-4f65-497e-bdf0-15bcd24c2c50"
 
 [vars]
-# Firebase 專案 ID（與 VITE_FIREBASE_PROJECT_ID 相同），後端用來驗證 ID token
-FIREBASE_PROJECT_ID = "TODO_YOUR_FIREBASE_PROJECT_ID"
+# Google OAuth client ID（公開值）。建立方式見 README「Google 登入」一節；
+# 對應的 client secret 以 GOOGLE_CLIENT_SECRET 名義設為 Worker secret。
+GOOGLE_CLIENT_ID = "TODO_YOUR_GOOGLE_CLIENT_ID"
 # OpenAI 相容 API（POST {AI_BASE_URL}/chat/completions）的設定，用於成績表照片辨識
 AI_BASE_URL = "https://api.openai.com/v1"
 AI_MODEL = "gpt-4o-mini"

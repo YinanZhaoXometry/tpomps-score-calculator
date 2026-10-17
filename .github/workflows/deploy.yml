@@ -23,13 +23,6 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
-        env:
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
 
       # wrangler.toml（Worker + 靜態資產 + D1 綁定 + [vars]）決定部署內容與設定；
       # 使用 repo 內鎖定版本的 wrangler。CLOUDFLARE_API_TOKEN 需要
@@ -42,17 +35,21 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      # 把 AI API 密鑰同步為 Worker secret（未設定 AI_API_KEY secret 時自動略過）。
-      # 也可以只在本機手動執行一次：
-      #   pnpm exec wrangler secret put AI_API_KEY
-      - name: Sync AI_API_KEY secret
+      # 把密鑰同步為 Worker secret（未設定的自動略過）。也可以只在本機手動執行一次：
+      #   pnpm exec wrangler secret put GOOGLE_CLIENT_SECRET / AI_API_KEY
+      - name: Sync Worker secrets
         run: |
-          if [ -n "$AI_API_KEY" ]; then
-            printf '%s' "$AI_API_KEY" | pnpm exec wrangler secret put AI_API_KEY
-          else
-            echo "AI_API_KEY secret 未設定，略過同步"
-          fi
+          sync_secret() {
+            if [ -n "$2" ]; then
+              printf '%s' "$2" | pnpm exec wrangler secret put "$1"
+            else
+              echo "$1 secret 未設定，略過同步"
+            fi
+          }
+          sync_secret GOOGLE_CLIENT_SECRET "$GOOGLE_CLIENT_SECRET"
+          sync_secret AI_API_KEY "$AI_API_KEY"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           AI_API_KEY: ${{ secrets.AI_API_KEY }}

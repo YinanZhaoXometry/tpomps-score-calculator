@@ -17,20 +17,22 @@ pnpm preview    # 預覽打包結果
 
 `pnpm dev:full` 執行於 http://localhost:8787，會讀取 `.dev.vars`（密鑰）、`wrangler.toml` 的 `[vars]` 與本機 D1（`.wrangler/state`，需先執行 `pnpm db:migrate:local`）。
 
-## Google 登入（Firebase）
+## Google 登入（自管 OAuth）
 
-應用程式以 Firebase Authentication 的 Google 登入保護，登入狀態約 6 個月後過期（以使用者為單位，一部裝置上的多個帳戶各自獨立計算），屆時需重新登入。
+應用程式以 Google OAuth 2.0（Authorization Code + PKCE）登入，不依賴 Firebase：登入由後端 `worker/routes/auth.ts` 處理，成功後核發自管 session（HttpOnly cookie，內容為 D1 `sessions` 資料表中的隨機 token 雜湊），效期約 6 個月，由伺服器強制。使用者識別碼採 Google 帳號的 `sub`，與歷史記錄的 `user_id` 一致。
 
-設定步驟：
+設定步驟（Google Cloud Console）：
 
-1. 前往 [Firebase console](https://console.firebase.google.com/) 建立專案，並在 **Authentication → Sign-in method** 啟用 **Google** 供應商。
-2. 在 **Authentication → Settings → Authorized domains** 新增部署網域（例如 `tpomps-score-calculator.pages.dev`）；`localhost` 預設已授權。
-3. 複製 `.env.example` 為 `.env.local`，填入 **專案設定 → 一般 → 你的應用程式（Web app）** 的 SDK 設定值。
-4. 部署時需在 GitHub repo secrets 設定相同的六個 `VITE_FIREBASE_*` 環境變數（見下方部署一節），否則線上版本會顯示「尚未設定 Firebase」。另需在 Firebase 的 Authorized domains 加入部署網域（例如 `tpomps-score-calculator.<你的子網域>.workers.dev`）。
+1. 建立專案 → **APIs & Services → OAuth consent screen**：User Type 選 External，發布狀態保持在 Testing，並把自己的帳號加入 Test users。
+2. **APIs & Services → Credentials → Create credentials → OAuth client ID**，Application type 選 Web application，Authorized redirect URIs 加入：
+   - `https://tpomps-score-calculator.<你的子網域>.workers.dev/api/auth/callback`
+   - `http://localhost:8787/api/auth/callback`（本機開發）
+3. 把 Client ID 填入 `wrangler.toml` 的 `GOOGLE_CLIENT_ID`；Client Secret 以密鑰設定（見下方）。
+4. 本機開發：把兩個值分別填入 `wrangler.toml` 與 `.dev.vars`。
 
 ## 資料庫與歷史記錄（Cloudflare D1）
 
-歷史記錄儲存在 D1（`history_entries` 資料表），每筆記錄屬於一位 Firebase 使用者；API（`worker/routes/`）會驗證 Firebase ID token 後才讀寫。
+歷史記錄儲存在 D1（`history_entries` 資料表），每筆記錄屬於一位登入使用者；API（`worker/routes/`）會驗證 session cookie 後才讀寫。
 
 首次設定：
 
@@ -43,16 +45,15 @@ pnpm preview    # 預覽打包結果
 
 設定：在 `wrangler.toml` 的 `[vars]` 填入
 
-- `FIREBASE_PROJECT_ID`：與 `VITE_FIREBASE_PROJECT_ID` 相同
 - `AI_BASE_URL`：OpenAI 相容 API 的 base URL（例如 `https://api.openai.com/v1`）
 - `AI_MODEL`：支援圖片輸入的模型名稱
 
-密鑰 `AI_API_KEY` 設為 Worker secret（擇一）：
+密鑰（Worker secrets，擇一方式設定）：
 
-- 在 GitHub repo secrets 加入 `AI_API_KEY`，CI 會在每次部署時自動同步；或
-- 本機手動執行一次 `pnpm exec wrangler secret put AI_API_KEY`，或在 Cloudflare dashboard（Worker → Settings → Variables and Secrets）新增
+- 在 GitHub repo secrets 加入 `GOOGLE_CLIENT_SECRET` 與 `AI_API_KEY`，CI 會在每次部署時自動同步；或
+- 本機手動執行一次 `pnpm exec wrangler secret put <名稱>`，或在 Cloudflare dashboard（Worker → Settings → Variables and Secrets）新增
 
-本機開發：複製 `.dev.vars.example` 為 `.dev.vars` 並填入 `AI_API_KEY`。
+本機開發：複製 `.dev.vars.example` 為 `.dev.vars` 並填入 `GOOGLE_CLIENT_SECRET` 與 `AI_API_KEY`。
 
 ## 部署
 
@@ -64,7 +65,5 @@ pnpm preview    # 預覽打包結果
 | --- | --- |
 | `CLOUDFLARE_API_TOKEN` | 部署（需 Workers Scripts 編輯 + D1 編輯權限） |
 | `CLOUDFLARE_ACCOUNT_ID` | 部署 |
-| `VITE_FIREBASE_*`（六個） | 前端 Firebase 設定 |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret（同步為 Worker secret） |
 | `AI_API_KEY` | AI 辨識服務密鑰（同步為 Worker secret，可選） |
-
-若改用 dashboard 的 Workers Builds 部署，需在其 Build 設定中加入同樣的六個 `VITE_FIREBASE_*` build 環境變數（GitHub repo secrets 不會自動套用）。

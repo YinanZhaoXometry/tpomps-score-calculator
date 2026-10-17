@@ -1,13 +1,21 @@
 import { useState } from "react";
-import { signInWithPopup } from "firebase/auth";
 import { GraduationCap } from "lucide-react";
-import {
-  auth,
-  googleProvider,
-  isFirebaseConfigured,
-  recordLoginTime,
-} from "../lib/firebase";
 import { cn } from "../lib/utils";
+
+interface LoginPageProps {
+  configured: boolean;
+}
+
+// 對應 worker/routes/auth.ts 導回的 ?auth_error=<code>
+const authErrorMessages: Record<string, string> = {
+  not_configured: "尚未設定 Google 登入（GOOGLE_CLIENT_ID／GOOGLE_CLIENT_SECRET）",
+  invalid_state: "登入工作階段已過期，請重新再試",
+  exchange_failed: "登入失敗，請稍後再試",
+  verify_failed: "登入失敗，請稍後再試",
+};
+
+// 使用者在 Google 頁面取消登入，不算錯誤
+const silentErrors = new Set(["cancelled"]);
 
 function GoogleLogo() {
   return (
@@ -32,38 +40,21 @@ function GoogleLogo() {
   );
 }
 
-const errorMessages: Record<string, string> = {
-  "auth/popup-blocked": "瀏覽器已封鎖彈出視窗，請允許彈出視窗後再試",
-  "auth/unauthorized-domain": "此網域未獲授權，請於 Firebase 控制台新增授權網域",
-  "auth/network-request-failed": "網路連線失敗，請檢查網路後再試",
-  "auth/operation-not-allowed": "尚未啟用 Google 登入，請於 Firebase 控制台開啟",
-};
-
-// User-cancelled popups are not real errors.
-const silentErrors = new Set([
-  "auth/popup-closed-by-user",
-  "auth/cancelled-popup-request",
-]);
-
-export function LoginPage() {
-  const [signingIn, setSigningIn] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSignIn = async () => {
-    if (!auth || signingIn) return;
-    setSigningIn(true);
-    setError(null);
-    try {
-      const credential = await signInWithPopup(auth, googleProvider);
-      recordLoginTime(credential.user.uid);
-    } catch (err) {
-      const code = (err as { code?: string }).code ?? "";
+export function LoginPage({ configured }: LoginPageProps) {
+  const [error] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("auth_error");
+    if (code) {
+      window.history.replaceState(null, "", window.location.pathname);
       if (!silentErrors.has(code)) {
-        setError(errorMessages[code] ?? "登入失敗，請稍後再試");
+        return authErrorMessages[code] ?? "登入失敗，請稍後再試";
       }
-    } finally {
-      setSigningIn(false);
     }
+    return null;
+  });
+
+  const handleSignIn = () => {
+    window.location.href = "/api/auth/login";
   };
 
   return (
@@ -80,26 +71,23 @@ export function LoginPage() {
             香港小學加權計分
           </p>
 
-          {isFirebaseConfigured ? (
+          {configured ? (
             <button
               onClick={handleSignIn}
-              disabled={signingIn}
               className={cn(
                 "w-full h-11 flex items-center justify-center gap-3 rounded-lg border border-border bg-card",
                 "text-sm font-medium text-foreground transition-all",
-                "hover:bg-muted active:scale-[0.98] hover:cursor-pointer",
-                signingIn && "opacity-60 cursor-not-allowed"
+                "hover:bg-muted active:scale-[0.98] hover:cursor-pointer"
               )}
             >
               <GoogleLogo />
-              {signingIn ? "登入中…" : "使用 Google 帳戶登入"}
+              使用 Google 帳戶登入
             </button>
           ) : (
             <div className="w-full rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-700">
-              尚未設定 Firebase 環境變數（VITE_FIREBASE_*），無法啟用登入。
-              請複製 <code className="font-mono">.env.example</code> 為{" "}
-              <code className="font-mono">.env.local</code>{" "}
-              並填入 Firebase 設定後重新啟動。
+              尚未設定 Google 登入。請在 <code className="font-mono">wrangler.toml</code>{" "}
+              的 [vars] 填入 <code className="font-mono">GOOGLE_CLIENT_ID</code>，並設定{" "}
+              <code className="font-mono">GOOGLE_CLIENT_SECRET</code> 密鑰後重新部署。
             </div>
           )}
 

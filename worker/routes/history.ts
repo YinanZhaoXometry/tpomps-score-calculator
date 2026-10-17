@@ -1,4 +1,4 @@
-import { verifyUid } from '../_lib/auth';
+import { getSessionUid } from '../_lib/auth';
 import type { Env } from '../_lib/env';
 import { errorJson, json } from '../_lib/http';
 import { computeAverage, parseScores } from '../_lib/scores';
@@ -37,7 +37,7 @@ export async function listHistory({
   request,
   env,
 }: RouteContext): Promise<Response> {
-  const uid = await verifyUid(request, env);
+  const uid = await getSessionUid(request, env);
   if (!uid) return errorJson(401, '尚未登入，請重新登入後再試');
 
   const { results } = await env.DB.prepare(
@@ -53,7 +53,7 @@ export async function createHistory({
   request,
   env,
 }: RouteContext): Promise<Response> {
-  const uid = await verifyUid(request, env);
+  const uid = await getSessionUid(request, env);
   if (!uid) return errorJson(401, '尚未登入，請重新登入後再試');
 
   let body: unknown;
@@ -86,7 +86,7 @@ export async function deleteHistory({
   env,
   params,
 }: RouteContext): Promise<Response> {
-  const uid = await verifyUid(request, env);
+  const uid = await getSessionUid(request, env);
   if (!uid) return errorJson(401, '尚未登入，請重新登入後再試');
 
   const id = params.id;

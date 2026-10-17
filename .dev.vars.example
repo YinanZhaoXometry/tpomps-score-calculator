@@ -1,3 +1,4 @@
 # 複製為 .dev.vars（已 gitignore）供本機 `pnpm dev:full`（wrangler dev）使用。
-# 非密鑰設定（AI_BASE_URL／AI_MODEL／FIREBASE_PROJECT_ID）放在 wrangler.toml 的 [vars]。
+# 非密鑰設定（GOOGLE_CLIENT_ID／AI_BASE_URL／AI_MODEL）放在 wrangler.toml 的 [vars]。
+GOOGLE_CLIENT_SECRET=
 AI_API_KEY=

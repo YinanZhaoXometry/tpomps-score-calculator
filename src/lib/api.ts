@@ -1,5 +1,3 @@
-import { auth } from "./firebase";
-
 export interface HistoryEntry {
   id: string;
   createdAt: number;
@@ -16,29 +14,11 @@ export class ApiError extends Error {
   }
 }
 
-async function doFetch(
-  path: string,
-  init: RequestInit,
-  forceRefresh: boolean
-): Promise<Response> {
-  const token = auth?.currentUser
-    ? await auth.currentUser.getIdToken(forceRefresh)
-    : null;
-  return fetch(path, {
-    ...init,
-    headers: {
-      ...(init.headers as Record<string, string> | undefined),
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
-    },
-  });
-}
-
+// 同源請求，session cookie 由瀏覽器自動附帶。
 async function request<T>(path: string, init: RequestInit): Promise<T> {
   let res: Response;
   try {
-    res = await doFetch(path, init, false);
-    // token 過期時強制刷新再重試一次
-    if (res.status === 401) res = await doFetch(path, init, true);
+    res = await fetch(path, init);
   } catch {
     throw new ApiError(0, "無法連線伺服器，請檢查網絡後再試");
   }
@@ -74,10 +54,9 @@ export async function saveHistory(
 }
 
 export async function deleteHistory(id: string): Promise<void> {
-  await request<{ ok: boolean }>(
-    `/api/history/${encodeURIComponent(id)}`,
-    { method: "DELETE" }
-  );
+  await request<{ ok: boolean }>(`/api/history/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 }
 
 export async function recognizeImage(
@@ -89,4 +68,12 @@ export async function recognizeImage(
     body: JSON.stringify({ image }),
   });
   return data.scores;
+}
+
+export async function logout(): Promise<void> {
+  try {
+    await fetch("/api/auth/logout", { method: "POST" });
+  } catch {
+    // 登出失敗仍繼續：cookie 清不掉也會自然過期
+  }
 }

@@ -1,7 +1,5 @@
 import { useState, useCallback, useMemo, useRef } from "react";
 import type { ChangeEvent } from "react";
-import { signOut } from "firebase/auth";
-import type { User } from "firebase/auth";
 import {
   Calculator,
   RotateCcw,
@@ -18,14 +16,14 @@ import { CelebrationEffect } from "./CelebrationEffect";
 import { HistoryPage } from "./HistoryPage";
 import { useToast } from "../hooks/useToast";
 import { useFormCache } from "../hooks/useFormCache";
-import { auth, clearLoginTime } from "../lib/firebase";
+import type { AppUser } from "../hooks/useAuthSession";
 import { subjects } from "../lib/subjects";
 import { cn } from "../lib/utils";
-import { recognizeImage, saveHistory } from "../lib/api";
+import { logout, recognizeImage, saveHistory } from "../lib/api";
 import { fileToDataUrl } from "../lib/image";
 
 interface MainPageProps {
-  user: User;
+  user: AppUser;
 }
 
 type View = "calculator" | "history";
@@ -54,9 +52,10 @@ export function MainPage({ user }: MainPageProps) {
   }, [clearAll]);
 
   const handleSignOut = useCallback(async () => {
-    clearLoginTime(user.uid);
-    if (auth) await signOut(auth);
-  }, [user.uid]);
+    await logout();
+    // 整頁重新載入，讓 useAuthSession 重新查詢登入狀態
+    window.location.assign("/");
+  }, []);
 
   const handleCelebrationComplete = useCallback(() => {
     setCelebrating(false);

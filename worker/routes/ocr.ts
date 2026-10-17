@@ -1,4 +1,4 @@
-import { verifyUid } from '../_lib/auth';
+import { getSessionUid } from '../_lib/auth';
 import type { Env } from '../_lib/env';
 import { errorJson, json } from '../_lib/http';
 import { parseScores } from '../_lib/scores';
@@ -45,7 +45,7 @@ export async function recognizeScores({
   request,
   env,
 }: RouteContext): Promise<Response> {
-  const uid = await verifyUid(request, env);
+  const uid = await getSessionUid(request, env);
   if (!uid) return errorJson(401, '尚未登入，請重新登入後再試');
   if (!env.AI_BASE_URL || !env.AI_MODEL || !env.AI_API_KEY) {
     return errorJson(503, '尚未設定 AI 辨識服務，請聯絡管理員');

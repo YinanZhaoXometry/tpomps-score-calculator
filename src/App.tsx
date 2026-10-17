@@ -5,7 +5,7 @@ import { MainPage } from './components/MainPage';
 import { ToastProvider } from './components/Toast';
 
 function App() {
-  const { user, loading } = useAuthSession();
+  const { user, loading, configured } = useAuthSession();
 
   if (loading) {
     return (
@@ -22,7 +22,7 @@ function App() {
       <MainPage user={user} />
     </ToastProvider>
   ) : (
-    <LoginPage />
+    <LoginPage configured={configured} />
   );
 }
 
