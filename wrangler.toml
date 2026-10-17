@@ -21,7 +21,7 @@ run_worker_first = ["/api/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "tpomps-history"
-database_id = "TODO_FILL_FROM_wrangler_d1_create"
+database_id = "b33a6d9a-4f65-497e-bdf0-15bcd24c2c50"
 
 [vars]
 # Firebase 專案 ID（與 VITE_FIREBASE_PROJECT_ID 相同），後端用來驗證 ID token
